@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { usersServices } from '../services/Users.service';
+import { instanceToInstance } from 'class-transformer';
 
 interface IBody {
   id: string;
@@ -18,7 +19,7 @@ class UsersController {
   public async getAll(req: IRequest, res: Response): Promise<Response> {
     const allUsers = await usersServices.getAll();
 
-    return res.json(allUsers);
+    return res.json(instanceToInstance(allUsers));
   }
 
   public async getById(req: IRequest, res: Response): Promise<Response> {
@@ -26,7 +27,7 @@ class UsersController {
 
     const user = await usersServices.getById({ id });
 
-    return res.json(user);
+    return res.json(instanceToInstance(user));
   }
 
   public async create(req: IRequest, res: Response): Promise<Response> {
@@ -34,7 +35,7 @@ class UsersController {
 
     const user = await usersServices.create({ name, email, password });
 
-    return res.json(user);
+    return res.json(instanceToInstance(user));
   }
 
   public async update(req: IRequest, res: Response): Promise<Response> {
@@ -48,7 +49,7 @@ class UsersController {
       password,
     });
 
-    return res.json(user);
+    return res.json(instanceToInstance(user));
   }
 
   public async delete(req: IRequest, res: Response): Promise<Response> {
@@ -59,16 +60,17 @@ class UsersController {
     return res.json([]);
   }
 
-  public async updateAvatar(req: IRequest, res: Response): Promise<Response> {
-    const { avatar } = req.body;
-    const { id } = req.params;
+  public async updateAvatar(req: Request, res: Response): Promise<Response> {
+    const { avatar, id } = req.body;
+    // const { id } = req.params;
+    console.log('aqui', avatar);
 
     const user = await usersServices.updateAvatar({
-      id,
-      avatar,
+      id: req.user.id,
+      avatar: req.file?.filename as string,
     });
 
-    return res.json(user);
+    return res.json(instanceToInstance(user));
   }
 
   public async sendForgotPasswordEmail(
@@ -100,7 +102,7 @@ class UsersController {
 
     const user = await usersServices.showProfile({ user_id });
 
-    return res.json(user);
+    return res.json(instanceToInstance(user));
   }
 
   public async updateProfile(req: Request, res: Response): Promise<Response> {
@@ -115,7 +117,7 @@ class UsersController {
       old_password,
     });
 
-    return res.json(user);
+    return res.json(instanceToInstance(user));
   }
 }
 

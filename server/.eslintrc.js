@@ -19,4 +19,5 @@ module.exports = {
     'prefer-const': 'error',
     '@typescript-eslint/no-namespace': 'off',
   },
+  ignorePatterns: ['/dist/*'],
 };

@@ -1,6 +1,7 @@
 import { productsRepository } from '../repositories';
 import { Product } from '../entities/Product.entity';
 import { Like } from 'typeorm';
+import { redisCache } from '../redis/RedisCache';
 
 interface IRequest {
   id: string;
@@ -30,9 +31,19 @@ export class ProductsService {
   }
 
   public async getAll(): Promise<Product[]> {
-    const allProducts = productsRepository.find();
+    let products = await redisCache.recovery<Product[]>(
+      'api-vendas-PRODUCT_LIST'
+    );
 
-    return allProducts;
+    if (!products) {
+      products = await productsRepository.find();
+
+      await redisCache.save('api-vendas-PRODUCT_LIST', products);
+    }
+
+    console.log(products);
+
+    return products;
   }
 
   public async getById({ id }: Pick<IRequest, 'id'>) {
@@ -63,6 +74,8 @@ export class ProductsService {
       quantity,
     });
 
+    await redisCache.invalidate('api-vendas-PRODUCT_LIST');
+
     await productsRepository.save(product);
 
     return product;
@@ -83,6 +96,8 @@ export class ProductsService {
     if (product === null) {
       throw new Error('Product not found');
     }
+
+    await redisCache.invalidate('api-vendas-PRODUCT_LIST');
 
     product.title = title;
     product.description = description;

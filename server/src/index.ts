@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import 'express-async-errors';
+import { pagination } from 'typeorm-pagination';
 import express, { Application } from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
@@ -11,7 +12,7 @@ import { config } from './config';
 import { dataSource } from './database';
 import { routes } from './routes';
 import { uploadConfig } from './helpers/upload';
-import { pagination } from 'typeorm-pagination';
+import { rateLimiter } from './middleware/RateLimiter.middlaware';
 
 const app: Application = express();
 
@@ -30,6 +31,7 @@ dataSource
 
     app.use(cors());
     app.use(express.json());
+    app.use(rateLimiter);
     app.use(pagination);
     app.use('/files', express.static(uploadConfig.directory));
     app.use(morgan('common'));
@@ -38,7 +40,6 @@ dataSource
     app.use(routes);
     app.use(errors());
     app.use(errorMiddleware);
-
     app.listen(PORT, () => {
       console.log(`Server running in port: ${PORT}`);
     });

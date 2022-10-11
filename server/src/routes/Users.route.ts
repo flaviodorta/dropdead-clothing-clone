@@ -7,7 +7,7 @@ import { uploadConfig } from '../helpers/upload';
 
 export const usersRouter = Router();
 
-const upload = multer(uploadConfig);
+const upload = multer(uploadConfig.multer);
 
 usersRouter.get('/', isAuthenticated, usersController.getAll);
 

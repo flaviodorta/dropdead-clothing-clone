@@ -7,7 +7,11 @@ import { usersRepository, userTokensRepository } from '../repositories';
 import { config } from '../config';
 import { uploadConfig } from '../helpers/upload';
 import { addHours, isAfter } from 'date-fns';
+import { SESMail } from '../helpers/SESMail';
+import { mailConfig } from '../helpers/mail';
 import { EthrealMail } from '../helpers/EtherealMail';
+import { diskStorageProvider } from '../helpers/DiskStorageProvider';
+import { s3DiskStorageProvider } from '../helpers/S3DiskStorageProvider';
 
 interface IRequest {
   id: string;
@@ -123,20 +127,23 @@ export class UsersServices {
 
     if (!user) throw new Error('User not found');
 
-    if (user.avatar) {
-      const userAvatarFilepath = path.join(uploadConfig.directory, user.avatar);
-      const userAvatarFileExist = await fs.promises.stat(userAvatarFilepath);
-
-      if (userAvatarFileExist) {
-        await fs.promises.unlink(userAvatarFilepath);
+    if (uploadConfig.driver === 's3') {
+      console.log('s3');
+      if (user.avatar) {
+        await s3DiskStorageProvider.deleteFile(user.avatar);
       }
+      console.log('s3 avatar: ', avatar);
+      const filename = await s3DiskStorageProvider.saveFile(avatar);
+      user.avatar = filename;
+    } else {
+      if (user.avatar) {
+        await diskStorageProvider.deleteFile(user.avatar);
+      }
+      const filename = await diskStorageProvider.saveFile(avatar);
+      user.avatar = filename;
     }
 
-    user.avatar = avatar;
-
     await usersRepository.save(user);
-
-    console.log(avatar);
 
     return user;
   }
@@ -156,6 +163,24 @@ export class UsersServices {
       'views',
       'ForgotPassword.hbs'
     );
+
+    if (mailConfig.driver === 'ses') {
+      await SESMail.sendMail({
+        to: {
+          name: user.name,
+          email: user.email,
+        },
+        subject: '[API Vendas] Recuperação de Senha',
+        templateData: {
+          file: forgotPasswordTemplate,
+          variables: {
+            name: user.name,
+            link: `http://localhost:3000/reset_password?token=${token}`,
+          },
+        },
+      });
+      return;
+    }
 
     await EthrealMail.sendMail({
       to: {
