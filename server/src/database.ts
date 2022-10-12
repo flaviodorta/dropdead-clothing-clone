@@ -3,7 +3,7 @@ import { config } from './config';
 
 const { postgres_username, postgres_password, postgres_db } = config;
 
-const port_db = Number(config.port_db) || 5432;
+const port_db = Number(config.port_db) || 8000;
 
 export const dataSource = new DataSource({
   type: 'postgres',
@@ -12,6 +12,14 @@ export const dataSource = new DataSource({
   username: postgres_username,
   password: postgres_password,
   database: postgres_db,
-  migrations: ['./src/migrations/*.ts'],
-  entities: ['./src/entities/*.ts'],
+  migrations: [
+    process.env.NODE_ENV === 'development'
+      ? './src/migrations/*.ts'
+      : './dist/migrations/*.js',
+  ],
+  entities: [
+    process.env.NODE_ENV === 'development'
+      ? './src/entities/*.ts'
+      : './dist/entities/*.js',
+  ],
 });
